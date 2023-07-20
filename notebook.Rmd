@@ -1,0 +1,61 @@
+---
+title: 'Case Study 1: Bike share analysis'
+author: "Adriel Cardenas"
+date: "18/07/2023"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Instalacion y carga de paquetes necesarios
+
+```{r}
+library(tidyverse)
+library(skimr)
+library(janitor)
+library(lubridate)
+```
+
+
+### Importamos los datos
+
+```{r}
+jun23 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202306.csv")
+may23 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202305.csv")
+abr23 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202304.csv")
+mar23 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202303.csv")
+feb23 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202302.csv")
+jan23 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202301.csv")
+dec22 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202212.csv")
+nov22 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202211.csv")
+oct22 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202210.csv")
+sep22 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202209.csv")
+ago22 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202208.csv")
+jul22 <- read.csv("D:\\acgx\\Downloads\\BSDA\\Capstone1_Bike-share\\202207.csv")
+
+```
+
+### Combinamos los archivos fuentes (csv) en uno solo y validamos la estructura.
+```{r}
+bike_rides <- rbind(jul22,ago22,sep22,oct22,nov22,dec22,jan23,feb23,mar23,abr23,may23,jun23)
+colnames(bike_rides)
+glimpse(bike_rides)
+```
+
+### Renombrar columnas para dar claridad. La columna rideable_type pasa a bike_type y member_casual pasa a user_type
+```{r}
+bike_rides <- rename(bike_rides,bike_type = rideable_type, user_type = member_casual)
+```
+
+### Limpieza de los datos
+```{r}
+
+```
+
+
+
+
+
+
+
+
