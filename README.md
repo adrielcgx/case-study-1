@@ -1,5 +1,6 @@
-# Google Data Analytics Capstone: Complete a Case Study
-# Chicago base bike share company
+## Google Data Analytics Capstone:
+## Complete a Case Study
+### Chicago base bike share company
 
 ### Introduction
 Welcome to the **Cyclistic bike-share analysis case study**! In this case study, you will perform many real-world tasks of a junior
