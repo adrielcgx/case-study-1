@@ -1,5 +1,4 @@
-## Google Data Analytics Capstone:
-## Complete a Case Study
+## Google Data Analytics Capstone: Complete a Case Study
 ### Chicago base bike share company
 # 
 
@@ -88,5 +87,9 @@ Use the following Case Study Roadmap as a guide. Note: Completing this case stud
 
 **Deliverable**
   > A clear statement of the business task
+
+### Data
+We will use use Cyclistic’s historical trip data to analyze and identify trends. We'll use previous 12 months of Cyclistic trip data, [from here](https://divvy-tripdata.s3.amazonaws.com/index.html). The data has been made available by Motivate International Inc. under [this license](https://www.divvybikes.com/data-license-agreement). This is public data that you can use to explore how different customer types are using Cyclistic bikes. But note that data-privacy issues prohibit you from using riders’ personally identifiable information. This means that you won’t be able to connect pass purchases to credit card numbers to determine if casual riders live in the Cyclistic service area or if they have purchased multiple single passes
+
 
 **Please refere to the notebook and notebooks notes to follow the steps.**
