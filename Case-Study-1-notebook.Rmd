@@ -1,0 +1,329 @@
+---
+title::     "Google Data Analytics Capstone: Case study 1"
+subtitle:   "Chicago area bike share company analysis"
+author:     "Adriel Cardenas"
+date:       "21/07/2023"
+output:
+  html_document:
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+### Install and load of necessary packages
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+### Importing data and joining together
+
+Previous this step the csv files for every month were checked to respect
+the same structure and format using the CudaText editor + Linux terminal
+(tr -d command to strip '"' characters in some files).
+
+```{r}
+jul22 <- read.csv("./data/202207-divvy-tripdata.csv")
+aug22 <- read.csv("./data/202208-divvy-tripdata.csv")
+sep22 <- read.csv("./data/202209-divvy-tripdata.csv")
+oct22 <- read.csv("./data/202210-divvy-tripdata.csv")
+nov22 <- read.csv("./data/202211-divvy-tripdata.csv")
+dec22 <- read.csv("./data/202212-divvy-tripdata.csv")
+jan23 <- read.csv("./data/202301-divvy-tripdata.csv")
+feb23 <- read.csv("./data/202302-divvy-tripdata.csv")
+mar23 <- read.csv("./data/202303-divvy-tripdata.csv")
+apr23 <- read.csv("./data/202304-divvy-tripdata.csv")
+may23 <- read.csv("./data/202305-divvy-tripdata.csv")
+jun23 <- read.csv("./data/202306-divvy-tripdata.csv")
+```
+
+### Bindings all data into one
+
+```{r}
+total_rides <- rbind(jul22,aug22,sep22,oct22,nov22,dec22,jan23,feb23,mar23,apr23,may23,jun23)
+
+# Checkout information
+colnames(total_rides)
+glimpse(total_rides)
+```
+
+### Let's make some cleaning
+
+```{r}
+# Remove some columns we won't be using
+total_rides <- total_rides[,!names(total_rides) %in% c("start_lat", "start_lng","end_lat","end_lng")]
+
+# Split timestamp into columns so we can determine trips_duration
+total_rides$date <- as.Date(total_rides$started_at)
+total_rides$month <- format(as.Date(total_rides$date),"%m")
+total_rides$day <- format(as.Date(total_rides$date),"%d")
+#total_rides$year <- format(as.Date(total_rides$year),"%Y")
+total_rides$days_of_week <- format(as.Date(total_rides$date),"%A")
+
+# Create new column to find trip duration
+total_rides$trip_duration <- difftime(total_rides$ended_at, total_rides$started_at)
+# Convert data type of trip_duration to numeric
+total_rides$trip_duration <- as.numeric(as.character(total_rides$trip_duration))
+is.numeric(total_rides$trip_duration)
+# Validation
+glimpse(total_rides)
+
+# Checkout how many row we have now
+nrow(total_rides)
+# [1] output 5,779,444
+
+# So, we clean all records that have null/void information
+# First, to count trip_duration with zero or negative value.
+sum(total_rides$trip_duration <= 0)
+# [1] output 574
+
+# Delete bad data
+total_rides_C1 <- total_rides[!(total_rides$trip_duration <= 0),]
+sum(total_rides_C1$trip_duration <= 0)
+# [1] output 0
+nrow(total_rides_C1)
+# [1] output 5,778,870
+
+# Clean and delete all the records with void value un the start/end station
+total_rides_C1 <- subset(total_rides_C1, start_station_name != "")
+total_rides_C1 <- subset(total_rides_C1, end_station_name != "")
+nrow(total_rides_C1)
+# [1] output 4,409,006
+```
+
+### So we start making some analysis
+
+```{r}
+summary(total_rides_C1$trip_duration)
+# [1] output
+#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#      1.0     343.0     600.0     963.3    1071.0 1922127.0 
+#
+avg_ride_duration <- aggregate(total_rides_C1$trip_duration ~ total_rides_C1$member_casual, FUN = mean)
+median_value <- aggregate(total_rides_C1$trip_duration ~ total_rides_C1$member_casual, FUN = median)
+max_ride_duration <- aggregate(total_rides_C1$trip_duration ~ total_rides_C1$member_casual, FUN = max)
+min_ride_duration <- aggregate(total_rides_C1$trip_duration ~ total_rides_C1$member_casual, FUN = min)
+print(avg_ride_duration)
+print(median_value)
+print(max_ride_duration)
+print(min_ride_duration)
+
+total_rides_C1$days_of_week <- ordered(total_rides_C1$days_of_week , levels = c("domingo","lunes","martes","miércoles","jueves","viernes","sábado"))
+
+```
+
+### Let us show some grfx with the insights.
+
+**1. Comparison between types of users.**
+
+```{r}
+total_rides_C1 %>% 
+    ggplot(mapping = aes(x=member_casual))+geom_bar(color="black",fill=c("#3B5BA5", "#7F0622"))+geom_text(aes(label=after_stat(count)),stat = "count",vjust=2.5,color="white")+ labs(title = "Casual Riders vs Cyclistic Members",x="User Type")
+```
+
+Total rides: 4,409,006
+
+Avg Ride Duration (seconds/minutes) casual 1,350.1 / 22.5 member 726.1 /
+12.1
+
+Max Ride Duration (seconds/minutes) casual 1,922,127.0 / 32,035.5 member
+89,872.0 / 1,497.9
+
+Participation by Usertype Casual 1,675,560 38% Member 2,733,446 62%
+**Total 4,409,006 100%**
+
+**2. Cyclist members preferred bikes**
+
+```{r}
+total_rides_C1 %>% 
+  filter(total_rides_C1$member_casual == "member") %>% 
+    ggplot(mapping = aes(x=rideable_type))+geom_bar(color="black",fill=c("#686868"))+geom_text(aes(label=after_stat(count)),stat = "count",vjust=2.5,color="white")+ labs(title = "Cyclist members preferred bikes",x="Types of bikes")
+```
+
+Rideable Type
+Classic bike 1,690,104 62% 
+Electric bike 1,043,342 38%
+
+Total Members rides 2,733,446 100%
+
+**3. Casual riders preferred bikes analysis**
+
+```{r}
+total_rides_C1 %>% 
+  filter(total_rides_C1$member_casual == "casual") %>% 
+    ggplot(mapping = aes(x=rideable_type))+geom_bar(color="black",fill=c("#686868"))+geom_text(aes(label=after_stat(count)),stat = "count",vjust=2.5,color="white")+ labs(title = "Casual riders preferred bikes",x="Types of bikes")
+```
+
+Classic bikes is most favorite among the users and the second favorite
+bike is electric bikes. NOTE : Few Casual riders still uses Docked bikes
+whereas Cyclist members Completely Stopped using Docked bikes
+
+**4. No.of rides of cyclist members on each month**
+
+```{r}
+total_rides_C1 %>% filter(total_rides_C1$member_casual == "member") %>% 
+    ggplot(mapping = aes(x=month))+geom_bar(color="black",fill=c("#1662B2"))+geom_text(aes(label=after_stat(count)),stat = "count",vjust=2.5,color="white")+ labs(title = "Cyclist members - Number of rides on each month",x="Month")
+```
+
+For Cyclist members the maximum rides occurs in the month June, July,
+August and September.
+
+**5. No.of rides of Casual riders on each month**
+
+```{r}
+total_rides_C1 %>% 
+  filter(total_rides_C1$member_casual == "casual") %>% 
+    ggplot(mapping = aes(x=month))+geom_bar(color="black",fill=c("#1662b2"))+geom_text(aes(label=after_stat(count)),stat = "count",vjust=.95,color="white")+ labs(title = "Casual riders - Number of rides on each month",x="Month")
+```
+
+For Casual riders the maximum rides occurs in the month July
+
+**6. Avg ride time for each day**
+
+```{r}
+total_rides_C1 %>% 
+  group_by(member_casual,days_of_week) %>% 
+  summarise(avg_duration = mean(trip_duration)) %>% 
+  arrange(member_casual,days_of_week) %>% 
+  ggplot(mapping = aes(x= days_of_week, y=avg_duration, fill= member_casual))+
+  geom_col(position="dodge",width = 0.5)+scale_fill_manual(values=c("#900c3f", "#1662b2"))+
+  labs(title = "Average duration vs weekdays",x="WEEKDAYS",y="AVERAGE DURATION")
+```
+
+Casual riders averages more than Cyclist members and for Cyclist members
+the average trip duration is consistent throughout the week
+
+**7. No.of rides by both users**
+
+```{r}
+total_rides_C1 %>% 
+  group_by(member_casual,days_of_week) %>% 
+  summarise(no_of_rides = n()) %>% 
+  arrange(member_casual,days_of_week)
+```
+
+\*NA: Corresponds to Saturday+Wednesday
+
+**8. No of rides by day**
+
+```{r}
+total_rides_C1 %>% 
+  group_by(member_casual,days_of_week) %>% 
+  summarise(no_of_rides = n()) %>% 
+  arrange(member_casual,days_of_week) %>% 
+  ggplot(mapping = aes(x= days_of_week, y=no_of_rides, fill= member_casual))+
+  geom_col(position="dodge",width = 0.5)+scale_fill_manual(values=c("#900c3f", "#1662b2"))+
+  labs(title = "No.of rides vs weekdays",x="Days",y="No.of rides")
+```
+
+Thursday, Thursday an Wednesday are the days with more use by members
+and sundays by casual
+
+**9. Most used station**
+
+```{r}
+total_rides_C1 %>% 
+  filter(member_casual=="member") %>% 
+  group_by(start_station_name) %>% 
+  drop_na() %>%  
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  slice_max(n,n=5)
+```
+#Graph
+```{r}
+total_rides_C1 %>% 
+  filter(member_casual=="member") %>% 
+  group_by(start_station_name) %>% 
+  drop_na() %>%  
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  slice_max(n,n=5) %>% 
+  ggplot(mapping = aes(x=start_station_name, y = n))+geom_col(fill = "#686868",width = 0.5)+ labs(title = "Cyclist members most used Start Station",x="Start station",y="Count") + theme(axis.text.x = element_text(angle = 90))
+```
+
+**10. Most used station with Casual users**
+
+```{r}
+total_rides_C1 %>% 
+  filter(member_casual=="casual") %>% 
+  group_by(start_station_name) %>% 
+  drop_na() %>%  
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  slice_max(n,n=5)
+```
+#Graph
+```{r}
+total_rides_C1 %>% 
+  filter(member_casual=="casual") %>% 
+  group_by(start_station_name) %>% 
+  drop_na() %>%  
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  slice_max(n,n=5) %>% 
+  ggplot(mapping = aes(x=start_station_name, y = n))+geom_col(fill = "#3B5BA5",width = 0.5)+ labs(title = "Casual riders most used Start Station",x="Start station",y="Count") + theme(axis.text.x = element_text(angle = 90))
+```
+
+**11. Most visited end station by Members users**
+```{r}
+total_rides_C1 %>% 
+  filter(member_casual=="member") %>% 
+  group_by(end_station_name) %>% 
+  drop_na() %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  slice_max(n,n=5)
+```
+#Graph
+```{r}
+total_rides_C1 %>% 
+  filter(member_casual=="member") %>% 
+  group_by(end_station_name) %>% 
+  drop_na() %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  slice_max(n,n=5) %>% 
+  ggplot(mapping = aes(x=end_station_name, y = n))+geom_col(fill = "#686868",width = 0.5)+ labs(title = "Cyclist members most used end Station",x="End station",y="Count") + theme(axis.text.x = element_text(angle = 90))
+```
+
+**12. Casual riders most used end station**
+```{r}
+total_rides_C1 %>% 
+  filter(member_casual=="casual") %>% 
+  group_by(end_station_name) %>% 
+  drop_na() %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  slice_max(n,n=5)
+```
+#Graph
+```{r}
+total_rides_C1 %>% 
+  filter(member_casual=="casual") %>% 
+  group_by(end_station_name) %>% 
+  drop_na() %>% 
+  summarise(n=n()) %>% 
+  arrange(desc(n)) %>% 
+  slice_max(n,n=5) %>% 
+  ggplot(mapping = aes(x=end_station_name, y = n))+geom_col(fill = "#3B5Bb6",width = 0.5)+ labs(title = "Casual riders most used end Station",x="End station",y="Count") + theme(axis.text.x = element_text(angle = 90))
+```
+
+### Observations
+**1. Most used bike**
+_Classic bike_ is the most favorite bike for both the users and the second favorite bike is _electric bike_. Only few casual riders prefers docked bike whereas Cyclist members completely stopped using Docked bike
+
+**2. Months**
+Highest number of rides happened during June, July, August and Septembre for both the users, the cyclist members rent more bikes than casual riders however the casual riders are more active during summer (June, July, August and September).
+
+**3. Number of rides**
+Number of rides for cyclist members are consistent and slightly lower in sunday and for Casual riders the number of rides is lower in weekdays and they are more active in weekends
+
+**4. Average Trip duration**
+Average trip duration for casual riders is more when compared to cyclist members.
+
+
+
+
